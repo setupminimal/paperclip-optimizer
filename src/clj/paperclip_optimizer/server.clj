@@ -24,7 +24,7 @@
 
 (defn handler [request]
   (if (= "/" (:uri request))
-      (response/redirect "/help.html")
+      (response/redirect "/game.html")
       (render-app)))
 
 (def app 

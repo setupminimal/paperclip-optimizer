@@ -45,9 +45,11 @@
 (def paperclips (atom 0))
 (def pliers (atom {:number 0 :shown false :price 1000 :in-stock 100}))
 (def wire-extruders (atom {:number 0 :shown false :price 5000 :in-stock 100}))
-(def automatic-salesmachines (atom {:number 0 :shown false :price 50000 :in-stock 100}))
-(def mechanical-hands (atom {:number 0 :shown false :price 100000 :in-stock 100}))
-(def streamlinings (atom {:number 0 :shown false :price 50000 :in-stock 10}))
+(def automatic-salesmachines (atom {:number 0 :shown false :price 10000 :in-stock 100}))
+(def mechanical-hands (atom {:number 0 :shown false :price 20000 :in-stock 100}))
+(def streamlinings (atom {:number 0 :shown false :price 5000 :in-stock 10}))
+(def factories (atom {:number 0 :shown false :price 100000 :in-stock 100}))
+(def flimsies (atom {:number 0 :shown false :price 15000 :in-stock 10}))
 
 ;; Help texts:
 
@@ -58,6 +60,8 @@
 (def automatic-salesmachine-help "Sells 1 paperclip per second.")
 (def mechanical-hand-help "Makes paperclips, but only very slowly.")
 (def streamlining-help "By carefully organizing your paperclip production process, you can boost the number of paperclips you produce by 5%")
+(def factory-help "An automated factory produces paperclips much faster than mechanical hands.")
+(def flimsy-help "New technology lets you make paperclips more fragile, so that they break faster.")
 
 ;; Elements:
 
@@ -68,6 +72,8 @@
 (def automatic-salesmachine (.getElementById js/document "automatic-salesmachine"))
 (def mechanical-hand (.getElementById js/document "mechanical-hand"))
 (def streamlining (.getElementById js/document "streamlining"))
+(def factory (.getElementById js/document "factory"))
+(def flimsy (.getElementById js/document "flimsy"))
 
 ;; Views:
 ; Meta:
@@ -79,7 +85,7 @@
 (defn show-price [record]
   (if (>= (:in-stock @record) 1)
       (/ (Math/ceil (* 100 (current-price @record))) 100)
-      "out-of-stock: infinite"))
+      "out-of-stock"))
 
 ; Real:
 (defn money-view []
@@ -92,7 +98,8 @@
 
 (defn paperclip-view []
   (set-html! clickable paperclip-help 
-	     "You have " (Math/floor @paperclips) " paperclips!	[?]"))
+	     "You have " (Math/floor @paperclips) " paperclip"
+	     (if (not (= @paperclips 1)) "s") "!	[?]"))
 
 (defn plier-view []
   (show? pliers plier handle-plier-click)
@@ -109,7 +116,7 @@
   (show? automatic-salesmachines automatic-salesmachine 
   		 handle-automatic-salesmachine-click)
   (set-html! automatic-salesmachine automatic-salesmachine-help 
-  		 "Automatic Salesmachines: "
+  		 "Vending Machines: "
 	     (:number @automatic-salesmachines) " (Cost: $"
 	     (show-price automatic-salesmachines) ")	[?]"))
 
@@ -124,6 +131,18 @@
   (set-html! streamlining streamlining-help "Process Improvements: "
   		 (:number @streamlinings) " (Cost: $"
   		 (show-price streamlinings) ") [?]"))
+
+(defn factory-view []
+  (show? factories factory handle-factory-click)
+  (set-html! factory factory-help "Paperclip Factories: "
+  		 (:number @factories) " (Cost: $"
+  		 (show-price factories) ") [?]"))
+
+(defn flimsy-view []
+  (show? flimsies flimsy handle-flimsy-click)
+  (set-html! flimsy flimsy-help "Quality Reductions: "
+  	     (:number @flimsies) " (Cost: $"
+  	     (show-price flimsies) ") [?]"))
 
 ;; Event Handling:
 ; Meta
@@ -154,6 +173,8 @@
       (price-show automatic-salesmachines automatic-salesmachine-view)
       (price-show mechanical-hands mechanical-hand-view)
       (price-show streamlinings streamlining-view)
+      (price-show factories factory-view)
+      (price-show flimsies flimsy-view)
       (money-view)
       (paperclip-view))))
 
@@ -183,7 +204,7 @@
     (do (buy automatic-salesmachines)
         (automatic-salesmachine-view)
         (money-view)
-        (.setInterval js/window automatic-sale 1000))))
+        (.setInterval js/window automatic-sale 1003))))
 
 (defn handle-mechanical-hand-click []
   (if (buy-okay? mechanical-hands)
@@ -198,17 +219,32 @@
         (streamlining-view)
         (money-view))))
 
+(defn handle-factory-click []
+  (if (buy-okay? factories)
+    (do (buy factories)
+        (factory-view)
+        (money-view)
+        (.setInterval js/window automatic-production 1002))))
+
+(defn handle-flimsy-click []
+  (if (buy-okay? flimsies)
+    (do (buy flimsies)
+        (flimsy-view)
+        (money-view))))
+
 ;; Time Updates:
 
 (defn paperclip-loss []
-  (swap! paperclips-sold (fn [x] (if (> x 1) (/ x 1.05) 1)))
+  (swap! paperclips-sold (fn [x] (max 1 (/ x (+ 1 (* 0.05 (inc (:number @flimsies))))))))
   (money-view))
 
 (def restockables '(pliers wire-extruders 
-					automatic-salesmachines mechanical-hands))
+					automatic-salesmachines mechanical-hands
+					factories))
 
 (def restock-views '(plier-view wire-extruder-view
-					 automatic-salesmachine-view mechanical-hand-view))
+					 automatic-salesmachine-view mechanical-hand-view
+					 factory-view))
 
 (defn restock []
   (for [x restockables]

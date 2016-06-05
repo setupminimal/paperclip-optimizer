@@ -20,3 +20,11 @@ div {
   -ms-user-select: none;
   user-select: none;
 }
+
+.right {
+  text-align: right;
+}
+
+.center {
+  text-align: center;
+}
